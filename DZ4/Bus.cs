@@ -1,20 +1,21 @@
-public class Bus implements IVehicle {
-
+public class Bus : IVehicle
+{
     private int passengerCapacity;
-    private String routeNumber;
+    private string routeNumber;
 
-    public Bus(int passengerCapacity, String routeNumber) {
+    public Bus(int passengerCapacity, string routeNumber)
+    {
         this.passengerCapacity = passengerCapacity;
         this.routeNumber = routeNumber;
     }
 
-    @Override
-    public void drive() {
-        System.out.println("Bus on route " + routeNumber + " is driving.");
+    public void Drive()
+    {
+        Console.WriteLine($"Bus on route {routeNumber} is driving.");
     }
 
-    @Override
-    public void refuel() {
-        System.out.println("Refueling bus.");
+    public void Refuel()
+    {
+        Console.WriteLine("Refueling bus.");
     }
 }
