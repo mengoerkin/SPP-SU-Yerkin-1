@@ -1,20 +1,21 @@
-public class Motorcycle implements IVehicle {
-
-    private String type;
+public class Motorcycle : IVehicle
+{
+    private string type;
     private int engineCapacity;
 
-    public Motorcycle(String type, int engineCapacity) {
+    public Motorcycle(string type, int engineCapacity)
+    {
         this.type = type;
         this.engineCapacity = engineCapacity;
     }
 
-    @Override
-    public void drive() {
-        System.out.println(type + " motorcycle with " + engineCapacity + "cc is driving.");
+    public void Drive()
+    {
+        Console.WriteLine($"{type} motorcycle with {engineCapacity}cc is driving.");
     }
 
-    @Override
-    public void refuel() {
-        System.out.println("Refueling motorcycle.");
+    public void Refuel()
+    {
+        Console.WriteLine("Refueling motorcycle.");
     }
 }
