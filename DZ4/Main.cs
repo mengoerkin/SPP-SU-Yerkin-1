@@ -1,68 +1,67 @@
-import java.util.Scanner;
+using System;
 
-public class Main {
+class Program
+{
+    static void Main()
+    {
+        Console.WriteLine("Choose vehicle type:");
+        Console.WriteLine("car / motorcycle / truck / bus");
 
-    public static void main(String[] args) {
-
-        Scanner scanner = new Scanner(System.in);
+        string choice = Console.ReadLine()?.ToLower();
         VehicleFactory factory = null;
 
-        System.out.println("Choose vehicle type: car, motorcycle, truck, bus");
-        String choice = scanner.nextLine();
-
-        switch (choice.toLowerCase()) {
-
+        switch (choice)
+        {
             case "car":
-                System.out.print("Brand: ");
-                String brand = scanner.nextLine();
+                Console.Write("Brand: ");
+                string brand = Console.ReadLine();
 
-                System.out.print("Model: ");
-                String model = scanner.nextLine();
+                Console.Write("Model: ");
+                string model = Console.ReadLine();
 
-                System.out.print("Fuel type: ");
-                String fuel = scanner.nextLine();
+                Console.Write("Fuel type: ");
+                string fuel = Console.ReadLine();
 
                 factory = new CarFactory(brand, model, fuel);
                 break;
 
             case "motorcycle":
-                System.out.print("Type: ");
-                String type = scanner.nextLine();
+                Console.Write("Type: ");
+                string type = Console.ReadLine();
 
-                System.out.print("Engine capacity: ");
-                int capacity = scanner.nextInt();
+                Console.Write("Engine capacity: ");
+                int capacity = int.Parse(Console.ReadLine());
 
                 factory = new MotorcycleFactory(type, capacity);
                 break;
 
             case "truck":
-                System.out.print("Load capacity (tons): ");
-                double load = scanner.nextDouble();
+                Console.Write("Load capacity: ");
+                double load = double.Parse(Console.ReadLine());
 
-                System.out.print("Number of axles: ");
-                int axles = scanner.nextInt();
+                Console.Write("Axles: ");
+                int axles = int.Parse(Console.ReadLine());
 
                 factory = new TruckFactory(load, axles);
                 break;
 
             case "bus":
-                System.out.print("Passenger capacity: ");
-                int passengers = scanner.nextInt();
-                scanner.nextLine();
+                Console.Write("Passenger capacity: ");
+                int passengers = int.Parse(Console.ReadLine());
 
-                System.out.print("Route number: ");
-                String route = scanner.nextLine();
+                Console.Write("Route number: ");
+                string route = Console.ReadLine();
 
                 factory = new BusFactory(passengers, route);
                 break;
 
             default:
-                System.out.println("Invalid type!");
+                Console.WriteLine("Invalid type!");
                 return;
         }
 
-        IVehicle vehicle = factory.createVehicle();
-        vehicle.drive();
-        vehicle.refuel();
+        IVehicle vehicle = factory.CreateVehicle();
+        vehicle.Drive();
+        vehicle.Refuel();
     }
 }
