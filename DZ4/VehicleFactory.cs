@@ -1,3 +1,4 @@
-public abstract class VehicleFactory {
-    public abstract IVehicle createVehicle();
+public abstract class VehicleFactory
+{
+    public abstract IVehicle CreateVehicle();
 }
