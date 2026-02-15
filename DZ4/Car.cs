@@ -1,22 +1,23 @@
-public class Car implements IVehicle {
+public class Car : IVehicle
+{
+    private string brand;
+    private string model;
+    private string fuelType;
 
-    private String brand;
-    private String model;
-    private String fuelType;
-
-    public Car(String brand, String model, String fuelType) {
+    public Car(string brand, string model, string fuelType)
+    {
         this.brand = brand;
         this.model = model;
         this.fuelType = fuelType;
     }
 
-    @Override
-    public void drive() {
-        System.out.println("Car " + brand + " " + model + " is driving.");
+    public void Drive()
+    {
+        Console.WriteLine($"Car {brand} {model} is driving.");
     }
 
-    @Override
-    public void refuel() {
-        System.out.println("Refueling car with " + fuelType);
+    public void Refuel()
+    {
+        Console.WriteLine($"Refueling car with {fuelType}.");
     }
 }
