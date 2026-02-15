@@ -1,4 +1,5 @@
-public interface IVehicle {
-    void drive();
-    void refuel();
+public interface IVehicle
+{
+    void Drive();
+    void Refuel();
 }
