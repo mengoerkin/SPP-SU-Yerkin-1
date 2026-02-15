@@ -1,15 +1,16 @@
-public class BusFactory extends VehicleFactory {
-
+public class BusFactory : VehicleFactory
+{
     private int passengerCapacity;
-    private String routeNumber;
+    private string routeNumber;
 
-    public BusFactory(int passengerCapacity, String routeNumber) {
+    public BusFactory(int passengerCapacity, string routeNumber)
+    {
         this.passengerCapacity = passengerCapacity;
         this.routeNumber = routeNumber;
     }
 
-    @Override
-    public IVehicle createVehicle() {
+    public override IVehicle CreateVehicle()
+    {
         return new Bus(passengerCapacity, routeNumber);
     }
 }
