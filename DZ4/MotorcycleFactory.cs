@@ -1,15 +1,16 @@
-public class MotorcycleFactory extends VehicleFactory {
-
-    private String type;
+public class MotorcycleFactory : VehicleFactory
+{
+    private string type;
     private int engineCapacity;
 
-    public MotorcycleFactory(String type, int engineCapacity) {
+    public MotorcycleFactory(string type, int engineCapacity)
+    {
         this.type = type;
         this.engineCapacity = engineCapacity;
     }
 
-    @Override
-    public IVehicle createVehicle() {
+    public override IVehicle CreateVehicle()
+    {
         return new Motorcycle(type, engineCapacity);
     }
 }
