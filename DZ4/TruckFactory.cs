@@ -1,15 +1,16 @@
-public class TruckFactory extends VehicleFactory {
-
+public class TruckFactory : VehicleFactory
+{
     private double loadCapacity;
     private int axles;
 
-    public TruckFactory(double loadCapacity, int axles) {
+    public TruckFactory(double loadCapacity, int axles)
+    {
         this.loadCapacity = loadCapacity;
         this.axles = axles;
     }
 
-    @Override
-    public IVehicle createVehicle() {
+    public override IVehicle CreateVehicle()
+    {
         return new Truck(loadCapacity, axles);
     }
 }
