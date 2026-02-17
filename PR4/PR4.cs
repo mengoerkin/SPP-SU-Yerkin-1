@@ -1,171 +1,82 @@
-public interface IVehicle
+public interface IDocument
 {
-    void Drive();
-    void Refuel();
+    void Open();
 }
 
-public class Car : IVehicle
+public class Report : IDocument
 {
-    private string brand;
-    private string model;
-    private string fuelType;
-
-    public Car(string brand, string model, string fuelType)
+    public void Open()
     {
-        this.brand = brand;
-        this.model = model;
-        this.fuelType = fuelType;
-    }
-
-    public void Drive()
-    {
-        Console.WriteLine($"Car {brand} {model} is driving.");
-    }
-
-    public void Refuel()
-    {
-        Console.WriteLine($"Refueling car with {fuelType}.");
+        Console.WriteLine("Opening Report document...");
     }
 }
 
-public class Motorcycle : IVehicle
+public class Resume : IDocument
 {
-    private string type;
-    private int engineCapacity;
-
-    public Motorcycle(string type, int engineCapacity)
+    public void Open()
     {
-        this.type = type;
-        this.engineCapacity = engineCapacity;
-    }
-
-    public void Drive()
-    {
-        Console.WriteLine($"{type} motorcycle with {engineCapacity}cc is driving.");
-    }
-
-    public void Refuel()
-    {
-        Console.WriteLine("Refueling motorcycle.");
+        Console.WriteLine("Opening Resume document...");
     }
 }
 
-public class Truck : IVehicle
+public class Letter : IDocument
 {
-    private double loadCapacity;
-    private int axles;
-
-    public Truck(double loadCapacity, int axles)
+    public void Open()
     {
-        this.loadCapacity = loadCapacity;
-        this.axles = axles;
-    }
-
-    public void Drive()
-    {
-        Console.WriteLine($"Truck with {loadCapacity} tons capacity is driving.");
-    }
-
-    public void Refuel()
-    {
-        Console.WriteLine("Refueling truck.");
+        Console.WriteLine("Opening Letter document...");
     }
 }
 
-public abstract class VehicleFactory
+public abstract class DocumentCreator
 {
-    public abstract IVehicle CreateVehicle();
-}
+    // Фабричный метод
+    public abstract IDocument CreateDocument();
 
-public class CarFactory : VehicleFactory
-{
-    private string brand;
-    private string model;
-    private string fuelType;
-
-    public CarFactory(string brand, string model, string fuelType)
+    // Общая логика работы
+    public void OpenDocument()
     {
-        this.brand = brand;
-        this.model = model;
-        this.fuelType = fuelType;
-    }
-
-    public override IVehicle CreateVehicle()
-    {
-        return new Car(brand, model, fuelType);
+        IDocument document = CreateDocument();
+        document.Open();
     }
 }
 
-public class MotorcycleFactory : VehicleFactory
+public class ReportCreator : DocumentCreator
 {
-    private string type;
-    private int engineCapacity;
-
-    public MotorcycleFactory(string type, int engineCapacity)
+    public override IDocument CreateDocument()
     {
-        this.type = type;
-        this.engineCapacity = engineCapacity;
-    }
-
-    public override IVehicle CreateVehicle()
-    {
-        return new Motorcycle(type, engineCapacity);
+        return new Report();
     }
 }
 
-public class TruckFactory : VehicleFactory
+public class ResumeCreator : DocumentCreator
 {
-    private double loadCapacity;
-    private int axles;
-
-    public TruckFactory(double loadCapacity, int axles)
+    public override IDocument CreateDocument()
     {
-        this.loadCapacity = loadCapacity;
-        this.axles = axles;
-    }
-
-    public override IVehicle CreateVehicle()
-    {
-        return new Truck(loadCapacity, axles);
+        return new Resume();
     }
 }
 
-public class Bus : IVehicle
+public class LetterCreator : DocumentCreator
 {
-    private int passengerCapacity;
-    private string routeNumber;
-
-    public Bus(int passengerCapacity, string routeNumber)
+    public override IDocument CreateDocument()
     {
-        this.passengerCapacity = passengerCapacity;
-        this.routeNumber = routeNumber;
-    }
-
-    public void Drive()
-    {
-        Console.WriteLine($"Bus on route {routeNumber} is driving.");
-    }
-
-    public void Refuel()
-    {
-        Console.WriteLine("Refueling bus.");
+        return new Letter();
     }
 }
 
-public class BusFactory : VehicleFactory
+public class Invoice : IDocument
 {
-    private int passengerCapacity;
-    private string routeNumber;
-
-    public BusFactory(int passengerCapacity, string routeNumber)
+    public void Open()
     {
-        this.passengerCapacity = passengerCapacity;
-        this.routeNumber = routeNumber;
+        Console.WriteLine("Opening Invoice document...");
     }
+}
 
-    public override IVehicle CreateVehicle()
+public class InvoiceCreator : DocumentCreator
+{
+    public override IDocument CreateDocument()
     {
-        return new Bus(passengerCapacity, routeNumber);
+        return new Invoice();
     }
 }
 
@@ -175,64 +86,26 @@ class Program
 {
     static void Main()
     {
-        Console.WriteLine("Choose vehicle type:");
-        Console.WriteLine("car / motorcycle / truck / bus");
+        Console.WriteLine("Choose document type:");
+        Console.WriteLine("report / resume / letter / invoice");
 
         string choice = Console.ReadLine()?.ToLower();
-        VehicleFactory factory = null;
 
-        switch (choice)
+        DocumentCreator creator = choice switch
         {
-            case "car":
-                Console.Write("Brand: ");
-                string brand = Console.ReadLine();
+            "report" => new ReportCreator(),
+            "resume" => new ResumeCreator(),
+            "letter" => new LetterCreator(),
+            "invoice" => new InvoiceCreator(),
+            _ => null
+        };
 
-                Console.Write("Model: ");
-                string model = Console.ReadLine();
-
-                Console.Write("Fuel type: ");
-                string fuel = Console.ReadLine();
-
-                factory = new CarFactory(brand, model, fuel);
-                break;
-
-            case "motorcycle":
-                Console.Write("Type: ");
-                string type = Console.ReadLine();
-
-                Console.Write("Engine capacity: ");
-                int capacity = int.Parse(Console.ReadLine());
-
-                factory = new MotorcycleFactory(type, capacity);
-                break;
-
-            case "truck":
-                Console.Write("Load capacity: ");
-                double load = double.Parse(Console.ReadLine());
-
-                Console.Write("Axles: ");
-                int axles = int.Parse(Console.ReadLine());
-
-                factory = new TruckFactory(load, axles);
-                break;
-
-            case "bus":
-                Console.Write("Passenger capacity: ");
-                int passengers = int.Parse(Console.ReadLine());
-
-                Console.Write("Route number: ");
-                string route = Console.ReadLine();
-
-                factory = new BusFactory(passengers, route);
-                break;
-
-            default:
-                Console.WriteLine("Invalid type!");
-                return;
+        if (creator == null)
+        {
+            Console.WriteLine("Invalid document type!");
+            return;
         }
 
-        IVehicle vehicle = factory.CreateVehicle();
-        vehicle.Drive();
-        vehicle.Refuel();
+        creator.OpenDocument();
     }
 }
