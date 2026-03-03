@@ -182,7 +182,7 @@ public class AnalyticsObserver : IObserver
 
 #endregion
 
-#region ================= CLIENT =================
+#region CLIENT
 
 class Program
 {
