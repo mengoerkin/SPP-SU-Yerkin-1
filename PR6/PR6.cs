@@ -1,266 +1,221 @@
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
-#region STRATEGY PATTERN
+#region STRATEGY
 
-// poezdka turaly aqparat
-public class TravelRequest
+public interface IPaymentStrategy
 {
-    public double Distance { get; set; }
-    public string ServiceClass { get; set; } // econom / biznes
-    public int Passengers { get; set; }
-    public bool HasDiscount { get; set; }
-    public bool HasLuggage { get; set; }
+    void Pay(double amount);
 }
 
-// Stratgia interfeisi
-public interface ICostCalculationStrategy
+public class CreditCardPayment : IPaymentStrategy
 {
-    double CalculateCost(TravelRequest request);
-}
+    private string cardNumber;
 
-// Ushaq
-public class PlaneStrategy : ICostCalculationStrategy
-{
-    public double CalculateCost(TravelRequest request)
+    public CreditCardPayment(string cardNumber)
     {
-        double baseCost = request.Distance * 0.5;
+        this.cardNumber = cardNumber;
+    }
 
-        if (request.ServiceClass == "business")
-            baseCost *= 2;
-
-        if (request.HasLuggage)
-            baseCost += 50;
-
-        if (request.HasDiscount)
-            baseCost *= 0.9;
-
-        return baseCost * request.Passengers;
+    public void Pay(double amount)
+    {
+        Console.WriteLine($"Оплата {amount}$ картой {cardNumber}");
     }
 }
 
-// Poezd
-public class TrainStrategy : ICostCalculationStrategy
+public class PayPalPayment : IPaymentStrategy
 {
-    public double CalculateCost(TravelRequest request)
+    private string email;
+
+    public PayPalPayment(string email)
     {
-        double baseCost = request.Distance * 0.2;
+        this.email = email;
+    }
 
-        if (request.ServiceClass == "business")
-            baseCost *= 1.5;
-
-        if (request.HasDiscount)
-            baseCost *= 0.85;
-
-        return baseCost * request.Passengers;
+    public void Pay(double amount)
+    {
+        Console.WriteLine($"Оплата {amount}$ через PayPal ({email})");
     }
 }
 
-// Avtobus
-public class BusStrategy : ICostCalculationStrategy
+public class CryptoPayment : IPaymentStrategy
 {
-    public double CalculateCost(TravelRequest request)
+    private string wallet;
+
+    public CryptoPayment(string wallet)
     {
-        double baseCost = request.Distance * 0.1;
+        this.wallet = wallet;
+    }
 
-        if (request.HasDiscount)
-            baseCost *= 0.8;
-
-        return baseCost * request.Passengers;
+    public void Pay(double amount)
+    {
+        Console.WriteLine($"Оплата {amount}$ криптовалютой ({wallet})");
     }
 }
 
-// Kontekst
-public class TravelBookingContext
+public class PaymentContext
 {
-    private ICostCalculationStrategy _strategy;
+    private IPaymentStrategy _strategy;
 
-    public void SetStrategy(ICostCalculationStrategy strategy)
+    public void SetStrategy(IPaymentStrategy strategy)
     {
         _strategy = strategy ?? throw new Exception("Стратегия не выбрана!");
     }
 
-    public double Calculate(TravelRequest request)
+    public void ExecutePayment(double amount)
     {
         if (_strategy == null)
-            throw new Exception("Сначала выберите стратегию!");
+            throw new Exception("Сначала выберите оплату!");
 
-        if (request.Distance <= 0 || request.Passengers <= 0)
-            throw new Exception("Некорректные данные!");
-
-        return _strategy.CalculateCost(request);
+        _strategy.Pay(amount);
     }
 }
 
 #endregion
 
-#region OBSERVER PATTERN
+#region OBSERVER + SINGLETON
 
-// Baqylaushi interfeisi
 public interface IObserver
 {
-    void Update(string stock, double price);
+    void Update(string currency, double rate);
 }
 
-// Subekt interfeisi
 public interface ISubject
 {
-    void Subscribe(string stock, IObserver observer);
-    void Unsubscribe(string stock, IObserver observer);
-    void Notify(string stock, double price);
+    void Attach(IObserver observer);
+    void Detach(IObserver observer);
+    void Notify(string currency, double rate);
 }
 
-// Birzha
-public class StockExchange : ISubject
+// Singleton
+public class CurrencyExchange : ISubject
 {
-    private Dictionary<string, List<IObserver>> observers = new();
-    private Dictionary<string, double> stocks = new();
+    private static CurrencyExchange _instance;
 
-    public void AddStock(string name, double price)
-    {
-        stocks[name] = price;
-        observers[name] = new List<IObserver>();
-    }
+    private List<IObserver> observers = new();
+    private Dictionary<string, double> rates = new();
 
-    public void Subscribe(string stock, IObserver observer)
+    // Приватный конструктор
+    private CurrencyExchange() {}
+
+    // Единственная точка доступа
+    public static CurrencyExchange Instance
     {
-        if (observers.ContainsKey(stock))
+        get
         {
-            observers[stock].Add(observer);
-            Console.WriteLine($"[LOG] Подписка на {stock}");
+            if (_instance == null)
+                _instance = new CurrencyExchange();
+            return _instance;
         }
     }
 
-    public void Unsubscribe(string stock, IObserver observer)
+    public void Attach(IObserver observer)
     {
-        if (observers.ContainsKey(stock))
-        {
-            observers[stock].Remove(observer);
-            Console.WriteLine($"[LOG] Отписка от {stock}");
-        }
+        observers.Add(observer);
+        Console.WriteLine("[LOG] Подписчик добавлен");
     }
 
-    public async void ChangePrice(string stock, double newPrice)
+    public void Detach(IObserver observer)
     {
-        if (!stocks.ContainsKey(stock)) return;
-
-        stocks[stock] = newPrice;
-
-        Console.WriteLine($"\n[Биржа] {stock} новая цена: {newPrice}");
-
-        await NotifyAsync(stock, newPrice);
+        observers.Remove(observer);
+        Console.WriteLine("[LOG] Подписчик удален");
     }
 
-    public void Notify(string stock, double price)
+    public void SetRate(string currency, double rate)
     {
-        if (!observers.ContainsKey(stock)) return;
-
-        foreach (var observer in observers[stock])
-        {
-            observer.Update(stock, price);
-        }
+        rates[currency] = rate;
+        Console.WriteLine($"\n[Биржа] {currency} = {rate}");
+        Notify(currency, rate);
     }
 
-    private async Task NotifyAsync(string stock, double price)
+    public void Notify(string currency, double rate)
     {
-        if (!observers.ContainsKey(stock)) return;
-
-        List<Task> tasks = new();
-
-        foreach (var observer in observers[stock])
+        foreach (var observer in observers)
         {
-            tasks.Add(Task.Run(() => observer.Update(stock, price)));
+            observer.Update(currency, rate);
         }
-
-        await Task.WhenAll(tasks);
     }
 }
 
-// Treider
-public class Trader : IObserver
+// Наблюдатели
+
+public class UserObserver : IObserver
 {
     private string name;
 
-    public Trader(string name)
+    public UserObserver(string name)
     {
         this.name = name;
     }
 
-    public void Update(string stock, double price)
+    public void Update(string currency, double rate)
     {
-        Console.WriteLine($"Трейдер {name}: {stock} = {price}");
+        Console.WriteLine($"Пользователь {name}: {currency} = {rate}");
     }
 }
 
-// Robot
-public class TradingBot : IObserver
+public class TradingBotObserver : IObserver
 {
     private double threshold;
 
-    public TradingBot(double threshold)
+    public TradingBotObserver(double threshold)
     {
         this.threshold = threshold;
     }
 
-    public void Update(string stock, double price)
+    public void Update(string currency, double rate)
     {
-        if (price > threshold)
-            Console.WriteLine($"[BOT] Продаем {stock} по {price}");
+        if (rate > threshold)
+            Console.WriteLine($"[BOT] Продаем {currency}");
         else
-            Console.WriteLine($"[BOT] Покупаем {stock} по {price}");
+            Console.WriteLine($"[BOT] Покупаем {currency}");
+    }
+}
+
+public class AnalyticsObserver : IObserver
+{
+    public void Update(string currency, double rate)
+    {
+        Console.WriteLine($"[Analytics] {currency} обновлен до {rate}");
     }
 }
 
 #endregion
 
-#region CLIENT
+#region ================= CLIENT =================
 
 class Program
 {
     static void Main()
     {
-        Console.WriteLine("=== TRAVEL BOOKING (Strategy) ===");
+        Console.WriteLine("=== PAYMENT (Strategy) ===");
 
-        var context = new TravelBookingContext();
+        var context = new PaymentContext();
 
-        var request = new TravelRequest
-        {
-            Distance = 1000,
-            ServiceClass = "business",
-            Passengers = 2,
-            HasDiscount = true,
-            HasLuggage = true
-        };
+        context.SetStrategy(new CreditCardPayment("1234"));
+        context.ExecutePayment(100);
 
-        // strategia tandau
-        context.SetStrategy(new PlaneStrategy());
-        Console.WriteLine("Самолет: " + context.Calculate(request));
+        context.SetStrategy(new PayPalPayment("mail@test.com"));
+        context.ExecutePayment(200);
 
-        context.SetStrategy(new TrainStrategy());
-        Console.WriteLine("Поезд: " + context.Calculate(request));
+        context.SetStrategy(new CryptoPayment("0xABC"));
+        context.ExecutePayment(300);
 
-        context.SetStrategy(new BusStrategy());
-        Console.WriteLine("Автобус: " + context.Calculate(request));
+        Console.WriteLine("\n=== EXCHANGE (Observer + Singleton) ===");
 
-        Console.WriteLine("\n=== STOCK EXCHANGE (Observer) ===");
+        // Singleton қолдану
+        var exchange = CurrencyExchange.Instance;
 
-        var exchange = new StockExchange();
+        var user = new UserObserver("Alice");
+        var bot = new TradingBotObserver(500);
+        var analytics = new AnalyticsObserver();
 
-        exchange.AddStock("AAPL", 150);
-        exchange.AddStock("GOOG", 2800);
+        exchange.Attach(user);
+        exchange.Attach(bot);
+        exchange.Attach(analytics);
 
-        var trader1 = new Trader("Alice");
-        var trader2 = new Trader("Bob");
-        var bot = new TradingBot(200);
-
-        exchange.Subscribe("AAPL", trader1);
-        exchange.Subscribe("AAPL", bot);
-        exchange.Subscribe("GOOG", trader2);
-
-        // baga ozgertu
-        exchange.ChangePrice("AAPL", 180);
-        exchange.ChangePrice("GOOG", 2900);
+        exchange.SetRate("USD", 480);
+        exchange.SetRate("EUR", 550);
 
         Console.ReadLine();
     }
