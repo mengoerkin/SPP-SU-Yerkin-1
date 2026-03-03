@@ -1,253 +1,359 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 
-#region STRATEGY
-
-// Интерфейс стратегии (контракт для всех способов оплаты)
-public interface IPaymentStrategy
+namespace Module06_Combined
 {
-    void Pay(double amount); // Любая стратегия должна уметь платить
-}
+    // ============================================================
+    // ======================== 1) STRATEGY =======================
+    // ============================================================
 
-// Оплата картой
-public class CreditCardPayment : IPaymentStrategy
-{
-    private string cardNumber; // номер карты
-
-    public CreditCardPayment(string cardNumber)
+    public enum ServiceClass
     {
-        this.cardNumber = cardNumber; // сохраняем номер
+        Economy = 1,
+        Business = 2
     }
 
-    public void Pay(double amount)
+    public enum DiscountType
     {
-        // реализация оплаты
-        Console.WriteLine($"Оплата {amount}$ картой {cardNumber}");
-    }
-}
-
-// Оплата через PayPal
-public class PayPalPayment : IPaymentStrategy
-{
-    private string email;
-
-    public PayPalPayment(string email)
-    {
-        this.email = email;
+        None = 0,
+        Child = 1,
+        Pensioner = 2
     }
 
-    public void Pay(double amount)
+    public class TravelRequest
     {
-        Console.WriteLine($"Оплата {amount}$ через PayPal ({email})");
-    }
-}
+        public double DistanceKm { get; }
+        public ServiceClass ServiceClass { get; }
+        public DiscountType Discount { get; }
+        public int Passengers { get; }
+        public int BaggageCount { get; }
 
-// Оплата криптой
-public class CryptoPayment : IPaymentStrategy
-{
-    private string wallet;
-
-    public CryptoPayment(string wallet)
-    {
-        this.wallet = wallet;
-    }
-
-    public void Pay(double amount)
-    {
-        Console.WriteLine($"Оплата {amount}$ криптовалютой ({wallet})");
-    }
-}
-
-// Контекст — тот, кто использует стратегию
-public class PaymentContext
-{
-    private IPaymentStrategy _strategy; // текущая стратегия
-
-    // Устанавливаем способ оплаты
-    public void SetStrategy(IPaymentStrategy strategy)
-    {
-        // если null — ошибка
-        _strategy = strategy ?? throw new Exception("Стратегия не выбрана!");
-    }
-
-    // Выполнение оплаты
-    public void ExecutePayment(double amount)
-    {
-        // если стратегию забыли выбрать
-        if (_strategy == null)
-            throw new Exception("Сначала выберите оплату!");
-
-        _strategy.Pay(amount); // вызываем нужный метод
-    }
-}
-
-#endregion
-
-#region OBSERVER + SINGLETON
-
-// Интерфейс наблюдателя
-public interface IObserver
-{
-    void Update(string currency, double rate); // что делать при обновлении
-}
-
-// Интерфейс субъекта (биржи)
-public interface ISubject
-{
-    void Attach(IObserver observer);  // подписаться
-    void Detach(IObserver observer);  // отписаться
-    void Notify(string currency, double rate); // уведомить всех
-}
-
-// Singleton класс — биржа валют
-public class CurrencyExchange : ISubject
-{
-    private static CurrencyExchange _instance; // единственный объект
-
-    private List<IObserver> observers = new(); // список подписчиков
-    private Dictionary<string, double> rates = new(); // курсы валют
-
-    // Приватный конструктор — нельзя создать через new
-    private CurrencyExchange() {}
-
-    // Глобальный доступ к объекту (Singleton)
-    public static CurrencyExchange Instance
-    {
-        get
+        public TravelRequest(double distanceKm, ServiceClass serviceClass, DiscountType discount,
+                             int passengers, int baggageCount)
         {
-            // если еще не создан
-            if (_instance == null)
-                _instance = new CurrencyExchange(); // создаем
+            if (distanceKm <= 0) throw new ArgumentException("Кашыктык 0-ден улкен болуы керек.");
+            if (passengers <= 0) throw new ArgumentException("Жолаушылар саны 0-ден улкен болуы керек.");
+            if (baggageCount < 0) throw new ArgumentException("Багаж саны терыс болмауы керек.");
 
-            return _instance; // всегда возвращаем один и тот же объект
+            DistanceKm = distanceKm;
+            ServiceClass = serviceClass;
+            Discount = discount;
+            Passengers = passengers;
+            BaggageCount = baggageCount;
         }
     }
 
-    // Добавить наблюдателя
-    public void Attach(IObserver observer)
+    public interface ICostCalculationStrategy
     {
-        observers.Add(observer);
-        Console.WriteLine("[LOG] Подписчик добавлен");
+        string Name { get; }
+        decimal Calculate(TravelRequest request);
     }
 
-    // Удалить наблюдателя
-    public void Detach(IObserver observer)
+    public abstract class BaseStrategy : ICostCalculationStrategy
     {
-        observers.Remove(observer);
-        Console.WriteLine("[LOG] Подписчик удален");
-    }
+        public abstract string Name { get; }
+        public abstract decimal CalculateBase(TravelRequest request);
 
-    // Установить курс валюты
-    public void SetRate(string currency, double rate)
-    {
-        rates[currency] = rate; // обновляем значение
-
-        Console.WriteLine($"\n[Биржа] {currency} = {rate}");
-
-        Notify(currency, rate); // уведомляем всех
-    }
-
-    // Уведомление всех подписчиков
-    public void Notify(string currency, double rate)
-    {
-        foreach (var observer in observers)
+        public decimal Calculate(TravelRequest request)
         {
-            observer.Update(currency, rate); // вызываем Update у каждого
+            decimal cost = CalculateBase(request);
+
+            cost *= request.ServiceClass switch
+            {
+                ServiceClass.Business => 1.8m,
+                _ => 1.0m
+            };
+
+            cost *= request.Passengers;
+
+            cost *= request.Discount switch
+            {
+                DiscountType.Child => 0.70m,
+                DiscountType.Pensioner => 0.80m,
+                _ => 1.0m
+            };
+
+            return Math.Round(cost, 2);
+        }
+    }
+
+    public class AirplaneStrategy : BaseStrategy
+    {
+        public override string Name => "Самолет";
+        public override decimal CalculateBase(TravelRequest request)
+        {
+            decimal baseCost = (decimal)request.DistanceKm * 0.50m;
+            baseCost += request.BaggageCount * 20m;
+            baseCost *= 1.12m; 
+            return baseCost;
+        }
+    }
+
+    public class TrainStrategy : BaseStrategy
+    {
+        public override string Name => "Поезд";
+        public override decimal CalculateBase(TravelRequest request)
+        {
+            decimal baseCost = (decimal)request.DistanceKm * 0.30m;
+            baseCost += request.BaggageCount * 10m;
+            return baseCost;
+        }
+    }
+
+    public class BusStrategy : BaseStrategy
+    {
+        public override string Name => "Автобус";
+        public override decimal CalculateBase(TravelRequest request)
+        {
+            decimal baseCost = (decimal)request.DistanceKm * 0.20m;
+            baseCost += request.BaggageCount * 5m;
+            return baseCost;
+        }
+    }
+
+    public class TravelBookingContext
+    {
+        private ICostCalculationStrategy? _strategy;
+
+        public void SetStrategy(ICostCalculationStrategy strategy)
+            => _strategy = strategy ?? throw new ArgumentNullException(nameof(strategy));
+
+        public decimal Calculate(TravelRequest request)
+        {
+            if (_strategy == null) throw new InvalidOperationException("Стратегия тандалмаган!");
+            return _strategy.Calculate(request);
+        }
+
+        public string CurrentStrategyName => _strategy?.Name ?? "None";
+    }
+
+    // ============================================================
+    // ======================= 2) OBSERVER ========================
+    // ============================================================
+
+    public interface IObserver
+    {
+        void Update(string stockName, decimal newPrice);
+    }
+
+    public interface ISubject
+    {
+        void Subscribe(string stockName, IObserver observer);
+        void Unsubscribe(string stockName, IObserver observer);
+        void Notify(string stockName);
+    }
+
+    public class StockExchange : ISubject
+    {
+        private readonly Dictionary<string, decimal> _prices = new();
+        private readonly Dictionary<string, List<IObserver>> _subscribers = new();
+
+        public void AddStock(string name, decimal initialPrice)
+        {
+            if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Акция аты бос болмауы керек.");
+            if (initialPrice <= 0) throw new ArgumentException("Бастапкы бага 0-ден улкен болуы керек.");
+
+            _prices[name] = initialPrice;
+            if (!_subscribers.ContainsKey(name))
+                _subscribers[name] = new List<IObserver>();
+        }
+
+        public void UpdatePrice(string name, decimal newPrice)
+        {
+            if (!_prices.ContainsKey(name)) throw new KeyNotFoundException("Мундай акция жок: " + name);
+            if (newPrice <= 0) throw new ArgumentException("Бага 0-ден улкен болуы керек.");
+
+            _prices[name] = newPrice;
+            Console.WriteLine($"[Биржа] {name} жана багасы: {newPrice}");
+            Notify(name);
+        }
+
+        public decimal GetPrice(string name) => _prices[name];
+
+        public void Subscribe(string stockName, IObserver observer)
+        {
+            if (!_subscribers.ContainsKey(stockName))
+                throw new KeyNotFoundException("Подписка ушын акция табылмады: " + stockName);
+
+            if (!_subscribers[stockName].Contains(observer))
+                _subscribers[stockName].Add(observer);
+
+            Console.WriteLine($"[Биржа] Подписка косылды: {observer.GetType().Name} -> {stockName}");
+        }
+
+        public void Unsubscribe(string stockName, IObserver observer)
+        {
+            if (_subscribers.ContainsKey(stockName) && _subscribers[stockName].Remove(observer))
+                Console.WriteLine($"[Биржа] Подписка өшырылды: {observer.GetType().Name} -> {stockName}");
+        }
+
+        public void Notify(string stockName)
+        {
+            if (!_subscribers.ContainsKey(stockName)) return;
+
+            var price = _prices[stockName];
+            foreach (var obs in _subscribers[stockName])
+                obs.Update(stockName, price);
+        }
+    }
+
+    public class Trader : IObserver
+    {
+        private readonly string _name;
+        public Trader(string name) => _name = name;
+
+        public void Update(string stockName, decimal newPrice)
+        {
+            Console.WriteLine($"[Трейдер {_name}] Уведомление: {stockName} = {newPrice}");
+        }
+    }
+
+    public class TradingRobot : IObserver
+    {
+        private readonly decimal _buyBelow;
+        private readonly decimal _sellAbove;
+
+        public TradingRobot(decimal buyBelow, decimal sellAbove)
+        {
+            if (buyBelow <= 0 || sellAbove <= 0) throw new ArgumentException("Шектер 0-ден үлкен болуы керек.");
+            if (buyBelow >= sellAbove) throw new ArgumentException("buyBelow < sellAbove болуы керек.");
+            _buyBelow = buyBelow;
+            _sellAbove = sellAbove;
+        }
+
+        public void Update(string stockName, decimal newPrice)
+        {
+            if (newPrice <= _buyBelow)
+                Console.WriteLine($"[Робот] BUY сигнал: {stockName} ({newPrice})");
+            else if (newPrice >= _sellAbove)
+                Console.WriteLine($"[Робот] SELL сигнал: {stockName} ({newPrice})");
+            else
+                Console.WriteLine($"[Робот] HOLD: {stockName} ({newPrice})");
+        }
+    }
+
+    // ============================================================
+    // =========================== DEMOS ==========================
+    // ============================================================
+
+    public static class Program
+    {
+        public static void Main()
+        {
+            Console.OutputEncoding = Encoding.UTF8;
+            Console.InputEncoding = Encoding.UTF8;
+            while (true)
+            {
+                Console.WriteLine("\n=== Модуль 06 (Біріктірілген) ===");
+                Console.WriteLine("1) Travel Booking (Strategy)");
+                Console.WriteLine("2) Stock Exchange (Observer)");
+                Console.WriteLine("0) Exit");
+                Console.Write("Таңдау: ");
+
+                var input = Console.ReadLine();
+                Console.WriteLine();
+
+                if (input == "0") break;
+                if (input == "1") RunTravelBookingDemo();
+                else if (input == "2") RunStockExchangeDemo();
+                else Console.WriteLine("Қате таңдау.");
+            }
+        }
+
+        private static void RunTravelBookingDemo()
+        {
+            var context = new TravelBookingContext();
+
+            Console.WriteLine("=== Travel Booking (Strategy) ===");
+            Console.WriteLine("Транспорт таңда: 1-Самолет, 2-Поезд, 3-Автобус");
+            int transport = ReadInt("Транспорт: ", min: 1, max: 3);
+
+            ICostCalculationStrategy strategy = transport switch
+            {
+                1 => new AirplaneStrategy(),
+                2 => new TrainStrategy(),
+                _ => new BusStrategy()
+            };
+            context.SetStrategy(strategy);
+
+            double dist = ReadDouble("Қашықтық (км): ", min: 0.0001);
+            int passengers = ReadInt("Жолаушылар саны: ", min: 1, max: 1000);
+            int baggage = ReadInt("Багаж саны: ", min: 0, max: 1000);
+
+            Console.WriteLine("Класс: 1-Economy, 2-Business");
+            int cls = ReadInt("Класс: ", min: 1, max: 2);
+
+            Console.WriteLine("Жеңілдік: 0-Жоқ, 1-Бала, 2-Зейнеткер");
+            int disc = ReadInt("Жеңілдік: ", min: 0, max: 2);
+
+            try
+            {
+                var request = new TravelRequest(
+                    distanceKm: dist,
+                    serviceClass: (ServiceClass)cls,
+                    discount: (DiscountType)disc,
+                    passengers: passengers,
+                    baggageCount: baggage
+                );
+
+                var total = context.Calculate(request);
+
+                Console.WriteLine($"\nСтратегия: {context.CurrentStrategyName}");
+                Console.WriteLine($"Итоговая стоимость: {total}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Қате: " + ex.Message);
+            }
+        }
+
+        private static void RunStockExchangeDemo()
+        {
+            Console.WriteLine("=== Stock Exchange (Observer) ===");
+
+            var exchange = new StockExchange();
+            exchange.AddStock("AAPL", 150m);
+            exchange.AddStock("GOOG", 2800m);
+            exchange.AddStock("TSLA", 700m);
+
+            var trader = new Trader("Alex");
+            var robot = new TradingRobot(buyBelow: 160m, sellAbove: 220m);
+
+            exchange.Subscribe("AAPL", trader);
+            exchange.Subscribe("AAPL", robot);
+
+            Console.WriteLine("\nБағаларды өзгерту (демо):");
+            exchange.UpdatePrice("AAPL", 210m);
+            exchange.UpdatePrice("AAPL", 155m);
+
+            exchange.Unsubscribe("AAPL", trader);
+            Console.WriteLine("\nТрейдерді алып тастадық, енді тек робот алады:");
+            exchange.UpdatePrice("AAPL", 230m);
+
+            Console.WriteLine("\n(Демо бітті)");
+        }
+
+        private static int ReadInt(string label, int min, int max)
+        {
+            while (true)
+            {
+                Console.Write(label);
+                if (int.TryParse(Console.ReadLine(), out int v) && v >= min && v <= max)
+                    return v;
+                Console.WriteLine($"Қате енгізу. [{min}..{max}] аралығы керек.");
+            }
+        }
+
+        private static double ReadDouble(string label, double min)
+        {
+            while (true)
+            {
+                Console.Write(label);
+                if (double.TryParse(Console.ReadLine(), out double v) && v >= min)
+                    return v;
+                Console.WriteLine($"Қате енгізу. >= {min} болуы керек.");
+            }
         }
     }
 }
-
-// Наблюдатель — пользователь
-public class UserObserver : IObserver
-{
-    private string name;
-
-    public UserObserver(string name)
-    {
-        this.name = name;
-    }
-
-    public void Update(string currency, double rate)
-    {
-        Console.WriteLine($"Пользователь {name}: {currency} = {rate}");
-    }
-}
-
-// Наблюдатель — торговый бот
-public class TradingBotObserver : IObserver
-{
-    private double threshold; // порог
-
-    public TradingBotObserver(double threshold)
-    {
-        this.threshold = threshold;
-    }
-
-    public void Update(string currency, double rate)
-    {
-        // логика бота
-        if (rate > threshold)
-            Console.WriteLine($"[BOT] Продаем {currency}");
-        else
-            Console.WriteLine($"[BOT] Покупаем {currency}");
-    }
-}
-
-// Наблюдатель — аналитика
-public class AnalyticsObserver : IObserver
-{
-    public void Update(string currency, double rate)
-    {
-        Console.WriteLine($"[Analytics] {currency} обновлен до {rate}");
-    }
-}
-
-#endregion
-
-#region CLIENT
-
-class Program
-{
-    static void Main()
-    {
-        Console.WriteLine("=== PAYMENT (Strategy) ===");
-
-        // создаем контекст
-        var context = new PaymentContext();
-
-        // выбираем стратегию — карта
-        context.SetStrategy(new CreditCardPayment("1234"));
-        context.ExecutePayment(100);
-
-        // меняем стратегию — PayPal
-        context.SetStrategy(new PayPalPayment("mail@test.com"));
-        context.ExecutePayment(200);
-
-        // меняем стратегию — крипта
-        context.SetStrategy(new CryptoPayment("0xABC"));
-        context.ExecutePayment(300);
-
-        Console.WriteLine("\n=== EXCHANGE (Observer + Singleton) ===");
-
-        // получаем ЕДИНСТВЕННЫЙ объект биржи
-        var exchange = CurrencyExchange.Instance;
-
-        // создаем наблюдателей
-        var user = new UserObserver("Alice");
-        var bot = new TradingBotObserver(500);
-        var analytics = new AnalyticsObserver();
-
-        // подписываем их
-        exchange.Attach(user);
-        exchange.Attach(bot);
-        exchange.Attach(analytics);
-
-        // меняем курс — все получают уведомление
-        exchange.SetRate("USD", 480);
-        exchange.SetRate("EUR", 550);
-
-        Console.ReadLine();
-    }
-}
-
-#endregion
